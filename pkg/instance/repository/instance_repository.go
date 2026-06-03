@@ -138,7 +138,12 @@ func (i *instanceRepository) GetAllConnectedInstancesByClientName(clientName str
 
 func (i *instanceRepository) GetAll(clientName string) ([]*instance_model.Instance, error) {
 	var instances []*instance_model.Instance
-	err := i.db.Where("client_name = ?", clientName).Find(&instances).Error
+	query := i.db
+	if clientName != "" {
+		query = query.Where("client_name = ?", clientName)
+	}
+
+	err := query.Find(&instances).Error
 	if err != nil {
 		return nil, err
 	}

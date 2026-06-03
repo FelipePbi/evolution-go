@@ -1,5 +1,7 @@
 package event_types
 
+import "strings"
+
 const (
 	ALL           = "ALL"
 	MESSAGE       = "MESSAGE"
@@ -55,4 +57,44 @@ var validEventTypes = map[string]bool{
 
 func IsEventType(eventType string) bool {
 	return validEventTypes[eventType]
+}
+
+func NormalizeSubscriptions(requested []string, existing string) ([]string, []string) {
+	source := requested
+	if len(source) == 0 {
+		source = strings.Split(existing, ",")
+	}
+
+	seen := make(map[string]bool, len(AllEventTypes))
+	subscriptions := make([]string, 0, len(source))
+	var invalid []string
+
+	for _, raw := range source {
+		eventType := strings.ToUpper(strings.TrimSpace(raw))
+		if eventType == "" {
+			continue
+		}
+
+		if eventType == ALL {
+			all := make([]string, len(AllEventTypes))
+			copy(all, AllEventTypes)
+			return all, invalid
+		}
+
+		if !IsEventType(eventType) {
+			invalid = append(invalid, raw)
+			continue
+		}
+
+		if !seen[eventType] {
+			seen[eventType] = true
+			subscriptions = append(subscriptions, eventType)
+		}
+	}
+
+	if len(subscriptions) == 0 {
+		subscriptions = append(subscriptions, MESSAGE)
+	}
+
+	return subscriptions, invalid
 }

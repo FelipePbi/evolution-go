@@ -58,3 +58,62 @@ func TestResolveInstanceWebhookUrl(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldConnectOnStartup(t *testing.T) {
+	tests := []struct {
+		name     string
+		instance *instance_model.Instance
+		want     bool
+	}{
+		{
+			name: "connected paired instance reconnects",
+			instance: &instance_model.Instance{
+				Jid:       "5511999999999:1@s.whatsapp.net",
+				Connected: true,
+			},
+			want: true,
+		},
+		{
+			name: "transient reconnecting reason reconnects",
+			instance: &instance_model.Instance{
+				Jid:              "5511999999999:1@s.whatsapp.net",
+				Connected:        false,
+				DisconnectReason: "Reconnecting",
+			},
+			want: true,
+		},
+		{
+			name: "transient websocket disconnect reason reconnects",
+			instance: &instance_model.Instance{
+				Jid:              "5511999999999:1@s.whatsapp.net",
+				Connected:        false,
+				DisconnectReason: "Disconnected emitted because the websocket is closed by the server.",
+			},
+			want: true,
+		},
+		{
+			name: "missing jid does not reconnect",
+			instance: &instance_model.Instance{
+				Connected: true,
+			},
+			want: false,
+		},
+		{
+			name: "manual logout does not reconnect",
+			instance: &instance_model.Instance{
+				Jid:              "5511999999999:1@s.whatsapp.net",
+				Connected:        false,
+				DisconnectReason: "Logged out",
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldConnectOnStartup(tt.instance); got != tt.want {
+				t.Fatalf("shouldConnectOnStartup() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

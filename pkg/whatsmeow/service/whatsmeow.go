@@ -1988,23 +1988,9 @@ func (w *whatsmeowService) CallWebhook(instance *instance_model.Instance, queueN
 		return
 	}
 
-	eventArray := strings.Split(instance.Events, ",")
-
-	var subscriptions []string
-
-	if len(eventArray) < 1 {
-		subscriptions = append(subscriptions, event_types.MESSAGE)
-	} else {
-		for _, arg := range eventArray {
-			if !event_types.IsEventType(arg) {
-				w.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Message type discarded: %s", instance.Id, arg)
-				continue
-			}
-			if !utils.Find(subscriptions, arg) {
-				subscriptions = append(subscriptions, arg)
-			}
-
-		}
+	subscriptions, invalidEvents := event_types.NormalizeSubscriptions(nil, instance.Events)
+	for _, arg := range invalidEvents {
+		w.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Message type discarded: %s", instance.Id, arg)
 	}
 
 	if contains(subscriptions, "ALL") {
@@ -2239,23 +2225,9 @@ func (w whatsmeowService) StartInstance(instanceId string) error {
 
 	w.userInfoCache.Set(instance.Token, v, cache.NoExpiration)
 
-	eventArray := strings.Split(instance.Events, ",")
-
-	var subscribedEvents []string
-
-	if len(eventArray) < 1 {
-		subscribedEvents = append(subscribedEvents, event_types.MESSAGE)
-	} else {
-		for _, arg := range eventArray {
-			if !event_types.IsEventType(arg) {
-				w.loggerWrapper.GetLogger(instanceId).LogWarn("[%s] Message type discarded: %s", instanceId, arg)
-				continue
-			}
-			if !utils.Find(subscribedEvents, arg) {
-				subscribedEvents = append(subscribedEvents, arg)
-			}
-
-		}
+	subscribedEvents, invalidEvents := event_types.NormalizeSubscriptions(nil, instance.Events)
+	for _, arg := range invalidEvents {
+		w.loggerWrapper.GetLogger(instanceId).LogWarn("[%s] Message type discarded: %s", instanceId, arg)
 	}
 
 	w.killChannel[instance.Id] = make(chan bool)
@@ -2287,32 +2259,52 @@ func (w whatsmeowService) StartInstance(instanceId string) error {
 
 func (w whatsmeowService) ConnectOnStartup(clientName string) {
 	w.loggerWrapper.GetLogger(clientName).LogInfo("Connecting all instances on startup")
-	var instances []*instance_model.Instance
-	var err error
-
-	if clientName != "" {
-		instances, err = w.instanceRepository.GetAllConnectedInstancesByClientName(clientName)
-		if err != nil {
-			w.loggerWrapper.GetLogger(clientName).LogError("[%s] Error getting all connected instances: %s", clientName, err)
-			return
-		}
-	} else {
-		instances, err = w.instanceRepository.GetAllConnectedInstances()
-		if err != nil {
-			w.loggerWrapper.GetLogger(clientName).LogError("[%s] Error getting all connected instances: %s", clientName, err)
-			return
-		}
+	instances, err := w.instanceRepository.GetAll(clientName)
+	if err != nil {
+		w.loggerWrapper.GetLogger(clientName).LogError("[%s] Error getting instances for startup reconnect: %s", clientName, err)
+		return
 	}
 
-	w.loggerWrapper.GetLogger(clientName).LogInfo("[%s] Found %d connected instances", clientName, len(instances))
+	w.loggerWrapper.GetLogger(clientName).LogInfo("[%s] Found %d instances to evaluate for startup reconnect", clientName, len(instances))
 
+	started := 0
 	for _, instance := range instances {
+		if !shouldConnectOnStartup(instance) {
+			w.loggerWrapper.GetLogger(clientName).LogInfo("[%s] Skipping startup reconnect for user '%s'", clientName, instance.Id)
+			continue
+		}
+
 		w.loggerWrapper.GetLogger(clientName).LogInfo("[%s] Starting client for user '%s'", clientName, instance.Id)
 
 		err := w.StartInstance(instance.Id)
 		if err != nil {
 			w.loggerWrapper.GetLogger(clientName).LogError("[%s] Error starting client: %s", clientName, err)
+			continue
 		}
+		started++
+	}
+
+	w.loggerWrapper.GetLogger(clientName).LogInfo("[%s] Started %d recoverable instances on startup", clientName, started)
+}
+
+func shouldConnectOnStartup(instance *instance_model.Instance) bool {
+	if instance == nil || strings.TrimSpace(instance.Jid) == "" {
+		return false
+	}
+
+	if instance.Connected {
+		return true
+	}
+
+	return isTransientStartupDisconnectReason(instance.DisconnectReason)
+}
+
+func isTransientStartupDisconnectReason(reason string) bool {
+	switch strings.TrimSpace(reason) {
+	case "Reconnecting", "Disconnected emitted because the websocket is closed by the server.":
+		return true
+	default:
+		return false
 	}
 }
 
@@ -2569,21 +2561,9 @@ func (w whatsmeowService) UpdateInstanceSettings(instanceId string) error {
 	myClient.websocketEnable = instance.WebSocketEnable
 
 	// Atualiza as subscriptions se os eventos mudaram
-	eventArray := strings.Split(instance.Events, ",")
-	var subscribedEvents []string
-
-	if len(eventArray) < 1 {
-		subscribedEvents = append(subscribedEvents, event_types.MESSAGE)
-	} else {
-		for _, arg := range eventArray {
-			if !event_types.IsEventType(arg) {
-				w.loggerWrapper.GetLogger(instanceId).LogWarn("[%s] Message type discarded: %s", instanceId, arg)
-				continue
-			}
-			if !utils.Find(subscribedEvents, arg) {
-				subscribedEvents = append(subscribedEvents, arg)
-			}
-		}
+	subscribedEvents, invalidEvents := event_types.NormalizeSubscriptions(nil, instance.Events)
+	for _, arg := range invalidEvents {
+		w.loggerWrapper.GetLogger(instanceId).LogWarn("[%s] Message type discarded: %s", instanceId, arg)
 	}
 
 	myClient.subscriptions = subscribedEvents

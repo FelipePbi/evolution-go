@@ -200,34 +200,35 @@ func (i instances) Create(data *CreateStruct) (*instance_model.Instance, error) 
 }
 
 func (i instances) Connect(data *ConnectStruct, instance *instance_model.Instance) (*instance_model.Instance, string, string, error) {
-	var subscribedEvents []string
+	if data == nil {
+		data = &ConnectStruct{}
+	}
 
 	i.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Processing subscribe events: %v", instance.Id, data.Subscribe)
 
-	if len(data.Subscribe) == 0 {
-		subscribedEvents = append(subscribedEvents, event_types.MESSAGE)
-	} else if len(data.Subscribe) > 0 && data.Subscribe[0] == "ALL" {
-		for _, event := range event_types.AllEventTypes {
-			subscribedEvents = append(subscribedEvents, event)
-		}
-	} else {
-		for _, arg := range data.Subscribe {
-			if !event_types.IsEventType(arg) {
-				i.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Message type discarded '%s'", instance.Id, arg)
-				continue
-			}
-			subscribedEvents = append(subscribedEvents, arg)
-		}
+	subscribedEvents, invalidEvents := event_types.NormalizeSubscriptions(data.Subscribe, instance.Events)
+	for _, arg := range invalidEvents {
+		i.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Message type discarded '%s'", instance.Id, arg)
 	}
 
 	eventString := strings.Join(subscribedEvents, ",")
 
 	instance.Events = eventString
-	instance.Webhook = data.WebhookUrl
-	instance.WebhookLocal = data.WebhookUrlLocal
-	instance.RabbitmqEnable = data.RabbitmqEnable
-	instance.NatsEnable = data.NatsEnable
-	instance.WebSocketEnable = data.WebSocketEnable
+	if data.WebhookUrl != "" {
+		instance.Webhook = data.WebhookUrl
+	}
+	if data.WebhookUrlLocal != "" {
+		instance.WebhookLocal = data.WebhookUrlLocal
+	}
+	if data.RabbitmqEnable != "" {
+		instance.RabbitmqEnable = data.RabbitmqEnable
+	}
+	if data.NatsEnable != "" {
+		instance.NatsEnable = data.NatsEnable
+	}
+	if data.WebSocketEnable != "" {
+		instance.WebSocketEnable = data.WebSocketEnable
+	}
 
 	err := i.instanceRepository.Update(instance)
 	if err != nil {
@@ -312,13 +313,6 @@ func (i instances) Disconnect(instance *instance_model.Instance) (*instance_mode
 		if client.IsLoggedIn() {
 			i.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Disconnection successful", instance.Id)
 			i.killChannel[instance.Id] <- true
-
-			instance.Events = ""
-
-			err := i.instanceRepository.Update(instance)
-			if err != nil {
-				return instance, err
-			}
 
 			return instance, nil
 		}
@@ -648,7 +642,10 @@ func (i instances) ForceReconnect(instanceId string, number string) error {
 		return err
 	}
 
-	subscribedEvents := strings.Split(instance.Events, ",")
+	subscribedEvents, invalidEvents := event_types.NormalizeSubscriptions(nil, instance.Events)
+	for _, arg := range invalidEvents {
+		i.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Message type discarded '%s'", instance.Id, arg)
+	}
 
 	i.killChannel[instance.Id] = make(chan bool)
 
