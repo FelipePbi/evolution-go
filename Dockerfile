@@ -29,6 +29,9 @@ COPY --from=build /build/server .
 COPY --from=build /build/manager/dist ./manager/dist
 COPY --from=build /build/VERSION ./VERSION
 
-ENV TZ=America/Sao_Paulo
+ENV TZ=America/Sao_Paulo \
+    GIN_MODE=release
+
+EXPOSE 8080
 
 ENTRYPOINT ["/app/server"]

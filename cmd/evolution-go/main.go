@@ -69,6 +69,16 @@ var devMode = flag.Bool("dev", false, "Enable development mode")
 
 var version = "0.0.0"
 
+func serverPort() string {
+	if port := strings.TrimSpace(os.Getenv("SERVER_PORT")); port != "" {
+		return port
+	}
+	if port := strings.TrimSpace(os.Getenv("PORT")); port != "" {
+		return port
+	}
+	return "8080"
+}
+
 func init() {
 	// ldflags -X main.version= sets this at compile time.
 	// If not set (or still default), try reading from VERSION file.
@@ -408,8 +418,9 @@ func main() {
 
 	core.StartHeartbeat(heartbeatCtx, runtimeCtx, startTime)
 
+	port := serverPort()
 	srv := &http.Server{
-		Addr:    ":" + os.Getenv("SERVER_PORT"),
+		Addr:    ":" + port,
 		Handler: r,
 	}
 
@@ -417,7 +428,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logger.LogInfo("Iniciando servidor na porta %s", os.Getenv("SERVER_PORT"))
+		logger.LogInfo("Iniciando servidor na porta %s", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}
