@@ -94,12 +94,6 @@ Envia eventos via HTTP POST para uma URL que você configurar. É o método mais
 
 ### Configuração
 
-**Variáveis de Ambiente**:
-```env
-# Webhook global (recebe eventos de todas as instâncias)
-WEBHOOK_URL=https://meu-servidor.com/webhook
-```
-
 **Por instância** (via Connect):
 ```bash
 curl -X POST http://localhost:4000/instance/connect \
@@ -120,8 +114,8 @@ curl -X POST http://localhost:4000/instance/connect \
 
 Quando um evento ocorre no WhatsApp:
 
-1. **Webhook Global**: Se configurado via `WEBHOOK_URL`, todos os eventos são enviados para esta URL
-2. **Webhook por Instância**: Se configurado no `POST /instance/connect`, eventos daquela instância vão para a URL específica
+1. **Webhook por Instância**: Se configurado no `POST /instance/connect`, eventos daquela instância vão para a URL específica
+2. **Webhook local**: Com `EVOLUTION_ENV=local`, `webhookUrlLocal` é usado quando preenchido; caso contrário, usa `webhookUrl`
 3. **Retry Automático**: Se a requisição falhar, o Evolution GO tenta novamente até 5 vezes
 4. **Intervalo**: 30 segundos entre cada tentativa
 
@@ -544,9 +538,6 @@ asyncio.run(listen_events())
 ### Exemplo Completo (.env)
 
 ```env
-# ===== WEBHOOK =====
-WEBHOOK_URL=https://meu-servidor.com/webhook-global
-
 # ===== RABBITMQ =====
 AMQP_URL=amqp://admin:password@rabbitmq:5672/
 AMQP_GLOBAL_ENABLED=true
@@ -791,7 +782,6 @@ O Evolution GO usa dois níveis de classificação de eventos:
 
 ```env
 # Habilitar tudo
-WEBHOOK_URL=https://api.exemplo.com/webhook
 AMQP_URL=amqp://localhost:5672/
 AMQP_GLOBAL_ENABLED=true
 NATS_URL=nats://localhost:4222
@@ -812,13 +802,12 @@ curl -X POST http://localhost:4000/instance/connect \
 ```
 
 **Resultado**: Ao receber 1 mensagem, o evento será enviado para:
-1. ✅ Webhook global (`WEBHOOK_URL`)
-2. ✅ Webhook da instância (`webhookUrl`)
-3. ✅ Fila RabbitMQ `message`
-4. ✅ Tópico NATS `evolution.vendas.message`
-5. ✅ Clientes WebSocket conectados
+1. ✅ Webhook da instância (`webhookUrl`)
+2. ✅ Fila RabbitMQ `message`
+3. ✅ Tópico NATS `evolution.vendas.message`
+4. ✅ Clientes WebSocket conectados
 
-**Total**: **5 destinos** para o mesmo evento!
+**Total**: **4 destinos** para o mesmo evento!
 
 ---
 
@@ -827,14 +816,12 @@ curl -X POST http://localhost:4000/instance/connect \
 ### 1. Setup Básico com Webhook
 
 ```bash
-# .env
-WEBHOOK_URL=https://meu-dominio.com/webhook
-
 # Conectar instância
 curl -X POST http://localhost:4000/instance/connect \
   -H "Content-Type: application/json" \
   -H "apikey: token-bot-123" \
   -d '{
+    "webhookUrl": "https://meu-dominio.com/webhook",
     "subscribe": ["MESSAGE"]
   }'
 

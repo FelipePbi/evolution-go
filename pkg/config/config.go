@@ -33,7 +33,7 @@ type Config struct {
 	OsName               string
 	AmqpUrl              string
 	AmqpGlobalEnabled    bool
-	WebhookUrl           string
+	EvolutionEnv         string
 	ClientName           string
 	ApiAudioConverter    string
 	ApiAudioConverterKey string
@@ -68,7 +68,6 @@ type Config struct {
 	LogMaxAge     int
 	LogDirectory  string
 	LogCompress   bool
-
 }
 
 // EnsureDBExists connects to postgres (without the target database) and creates it if it doesn't exist.
@@ -257,7 +256,10 @@ func Load() *Config {
 
 	amqpGlobalEnabled := os.Getenv(config_env.AMQP_GLOBAL_ENABLED)
 
-	webhookUrl := os.Getenv(config_env.WEBHOOK_URL)
+	evolutionEnv := os.Getenv(config_env.EVOLUTION_ENV)
+	if evolutionEnv == "" {
+		evolutionEnv = "production"
+	}
 
 	apiAudioConverter := os.Getenv(config_env.API_AUDIO_CONVERTER)
 	apiAudioConverterKey := os.Getenv(config_env.API_AUDIO_CONVERTER_KEY)
@@ -355,7 +357,7 @@ func Load() *Config {
 		OsName:               osName,
 		AmqpUrl:              amqpUrl,
 		AmqpGlobalEnabled:    amqpGlobalEnabled == "true",
-		WebhookUrl:           webhookUrl,
+		EvolutionEnv:         evolutionEnv,
 		ClientName:           clientName,
 		ApiAudioConverter:    apiAudioConverter,
 		ApiAudioConverterKey: apiAudioConverterKey,

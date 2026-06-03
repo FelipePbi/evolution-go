@@ -88,6 +88,7 @@ Create a `.env` file:
 ```env
 # Server
 SERVER_PORT=8080
+EVOLUTION_ENV=production
 CLIENT_NAME=evolution
 
 # Security
@@ -105,7 +106,6 @@ LOGTYPE=console
 # Optional
 # AMQP_URL=amqp://guest:guest@localhost:5672/
 # NATS_URL=nats://localhost:4222
-# WEBHOOK_URL=https://your-webhook-url.com/webhook
 # MINIO_ENABLED=true
 # MINIO_ENDPOINT=localhost:9000
 # MINIO_ACCESS_KEY=minioadmin
@@ -115,10 +115,15 @@ LOGTYPE=console
 | Variable | Description | Default |
 |---|---|---|
 | `SERVER_PORT` | Server port | `8080` |
+| `EVOLUTION_ENV` | Runtime environment. Set to `local` to use each instance's local webhook URL when configured. | `production` |
 | `CLIENT_NAME` | Client identifier | `evolution` |
 | `GLOBAL_API_KEY` | API authentication key | **Required** |
 | `DATABASE_SAVE_MESSAGES` | Enable message storage | `false` |
 | `WADEBUG` | WhatsApp debug level | `INFO` |
+
+When `EVOLUTION_ENV=local`, per-instance webhook dispatch uses `webhookUrlLocal` from `/instance/connect` if it is set. Otherwise it falls back to the existing `webhookUrl`. Any value other than `local` uses `webhookUrl`.
+
+Webhook destination URLs are configured per instance through `/instance/connect` using `webhookUrl` and, for local runtimes, `webhookUrlLocal`.
 
 ---
 

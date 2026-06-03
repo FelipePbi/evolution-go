@@ -450,7 +450,7 @@ func (w whatsmeowService) StartClient(cd *ClientData) {
 		userID:             cd.Instance.Id,
 		token:              cd.Instance.Token,
 		subscriptions:      cd.Subscriptions,
-		webhookUrl:         cd.Instance.Webhook,
+		webhookUrl:         resolveInstanceWebhookUrl(w.config.EvolutionEnv, cd.Instance),
 		rabbitmqEnable:     cd.Instance.RabbitmqEnable,
 		natsEnable:         cd.Instance.NatsEnable,
 		websocketEnable:    cd.Instance.WebSocketEnable,
@@ -1577,17 +1577,17 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 			buttonClickMap := map[string]interface{}{
 				"event": "ButtonClick",
 				"data": map[string]interface{}{
-					"buttonId":     buttonClickData["buttonId"],
-					"buttonText":   buttonClickData["buttonText"],
-					"type":         buttonClickData["type"],
-					"phone":        dataMap["Sender"],
-					"jid":          dataMap["Sender"],
-					"pushName":     dataMap["PushName"],
-					"messageId":    dataMap["ID"],
-					"chat":         dataMap["Chat"],
-					"fromMe":       dataMap["FromMe"],
-					"timestamp":    evt.Info.Timestamp.Unix(),
-					"extraData":    buttonClickData,
+					"buttonId":   buttonClickData["buttonId"],
+					"buttonText": buttonClickData["buttonText"],
+					"type":       buttonClickData["type"],
+					"phone":      dataMap["Sender"],
+					"jid":        dataMap["Sender"],
+					"pushName":   dataMap["PushName"],
+					"messageId":  dataMap["ID"],
+					"chat":       dataMap["Chat"],
+					"fromMe":     dataMap["FromMe"],
+					"timestamp":  evt.Info.Timestamp.Unix(),
+					"extraData":  buttonClickData,
 				},
 				"instanceToken": mycli.token,
 				"instanceId":    mycli.userID,
@@ -2170,14 +2170,30 @@ func (w *whatsmeowService) sendToQueueOrWebhook(instance *instance_model.Instanc
 		w.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Message sent to websocket successfully", instance.Id)
 	}
 
-	if instance.Webhook != "" && instance.Webhook != "disabled" {
-		err := w.webhookProducer.Produce(queueName, jsonData, instance.Webhook, instance.Id)
+	webhookUrl := resolveInstanceWebhookUrl(w.config.EvolutionEnv, instance)
+	if webhookUrl != "" && webhookUrl != "disabled" {
+		err := w.webhookProducer.Produce(queueName, jsonData, webhookUrl, instance.Id)
 		if err != nil {
 			w.loggerWrapper.GetLogger(instance.Id).LogError("[%s] Failed to send message to webhook: %s", instance.Id, err)
 			return
 		}
 		w.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Message sent to webhook successfully", instance.Id)
 	}
+}
+
+func resolveInstanceWebhookUrl(evolutionEnv string, instance *instance_model.Instance) string {
+	if instance == nil {
+		return ""
+	}
+
+	if strings.EqualFold(strings.TrimSpace(evolutionEnv), "local") {
+		localWebhook := strings.TrimSpace(instance.WebhookLocal)
+		if localWebhook != "" {
+			return localWebhook
+		}
+	}
+
+	return strings.TrimSpace(instance.Webhook)
 }
 
 func (w whatsmeowService) StartInstance(instanceId string) error {
@@ -2547,7 +2563,7 @@ func (w whatsmeowService) UpdateInstanceSettings(instanceId string) error {
 
 	// Atualiza as configurações no MyClient em execução
 	myClient.Instance = instance
-	myClient.webhookUrl = instance.Webhook
+	myClient.webhookUrl = resolveInstanceWebhookUrl(w.config.EvolutionEnv, instance)
 	myClient.rabbitmqEnable = instance.RabbitmqEnable
 	myClient.natsEnable = instance.NatsEnable
 	myClient.websocketEnable = instance.WebSocketEnable

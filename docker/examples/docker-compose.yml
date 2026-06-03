@@ -37,7 +37,6 @@ services:
       OS_NAME: "Linux"
 
       # Eventos (Opcionais)
-      WEBHOOK_URL: ""
       AMQP_URL: ""
       AMQP_GLOBAL_ENABLED: "false"
       NATS_URL: ""

@@ -142,9 +142,10 @@ func (i *instanceHandler) Connect(ctx *gin.Context) {
 	ctx.Set("instance", instance)
 
 	responseData := gin.H{
-		"jid":         jid,
-		"webhookUrl":  instance.Webhook,
-		"eventString": eventString,
+		"jid":             jid,
+		"webhookUrl":      instance.Webhook,
+		"webhookUrlLocal": instance.WebhookLocal,
+		"eventString":     eventString,
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "success", "data": responseData})

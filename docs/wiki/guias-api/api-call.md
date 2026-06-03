@@ -200,8 +200,10 @@ Quando você recebe um webhook de chamada, a estrutura é:
 
 Para receber eventos de chamada, configure o webhook:
 
-```env
-WEBHOOK_URL=https://seu-servidor.com/webhook
+```json
+{
+  "webhookUrl": "https://seu-servidor.com/webhook"
+}
 ```
 
 Certifique-se de que seu servidor:

@@ -3686,6 +3686,9 @@ const docTemplate = `{
                 "webhookUrl": {
                     "type": "string"
                 },
+                "webhookUrlLocal": {
+                    "type": "string"
+                },
                 "websocketEnable": {
                     "type": "string"
                 }

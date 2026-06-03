@@ -129,6 +129,8 @@ definitions:
         type: array
       webhookUrl:
         type: string
+      webhookUrlLocal:
+        type: string
       websocketEnable:
         type: string
     type: object

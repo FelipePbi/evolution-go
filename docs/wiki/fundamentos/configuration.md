@@ -272,12 +272,15 @@ EVENT_IGNORE_STATUS=true
 
 ## Webhooks
 
-### WEBHOOK_URL
+### Webhook por instância
 
-URL de destino para callbacks HTTP de eventos.
+URL de destino para callbacks HTTP de eventos. Configure no `POST /instance/connect`:
 
-```env
-WEBHOOK_URL=https://api.seudominio.com/webhook
+```json
+{
+  "webhookUrl": "https://api.seudominio.com/webhook",
+  "webhookUrlLocal": "http://localhost:3000/webhook"
+}
 ```
 
 Eventos serão enviados via POST com payload JSON:

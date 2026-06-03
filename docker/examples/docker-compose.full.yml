@@ -36,8 +36,7 @@ services:
       # Sistema
       OS_NAME: "Linux"
 
-      # Webhook
-      WEBHOOK_URL: "https://seu-webhook.com/endpoint"
+      # Webhook: configure por instância via /instance/connect
 
       # RabbitMQ
       AMQP_URL: "amqp://admin:admin@rabbitmq:5672/default"

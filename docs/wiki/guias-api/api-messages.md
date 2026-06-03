@@ -1237,8 +1237,10 @@ Sempre verifique o status code da resposta e o campo `error` no JSON retornado.
 
 ### 4. Usar Webhooks
 Para receber mensagens, configure webhooks em vez de polling:
-```env
-WEBHOOK_URL=https://seu-servidor.com/webhook
+```json
+{
+  "webhookUrl": "https://seu-servidor.com/webhook"
+}
 ```
 
 ### 5. Gerenciar Mídias

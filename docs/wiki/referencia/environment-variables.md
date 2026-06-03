@@ -71,7 +71,6 @@ POSTGRES_USERS_DB=postgresql://user:pass@host:5432/evogo_users?sslmode=disable
 |----------|--------|-----------|
 | `EVENT_IGNORE_GROUP` | `false` | Ignorar eventos de grupos |
 | `EVENT_IGNORE_STATUS` | `true` | Ignorar eventos de status/stories |
-| `WEBHOOK_URL` | - | URL para callbacks HTTP |
 
 ---
 
@@ -202,7 +201,7 @@ CHECK_USER_EXISTS=true
 EVENT_IGNORE_STATUS=true
 
 # Webhook
-WEBHOOK_URL=https://seu-servidor.com/webhook
+# Configure por instância via /instance/connect usando webhookUrl
 
 # RabbitMQ (opcional)
 AMQP_URL=amqp://admin:admin@rabbitmq:5672/default

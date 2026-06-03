@@ -219,13 +219,15 @@ ws://localhost:4000/ws?token=SUA-CHAVE-API&instanceId=minha-instancia
 
 ## Webhooks
 
-Configure webhooks via variável de ambiente:
+Configure webhooks por instância no `POST /instance/connect`:
 
-```env
-WEBHOOK_URL=https://seu-servidor.com/webhook
+```json
+{
+  "webhookUrl": "https://seu-servidor.com/webhook"
+}
 ```
 
-Eventos serão enviados via POST para a URL configurada.
+Eventos serão enviados via POST para a URL configurada na instância.
 
 ## Rate Limiting
 

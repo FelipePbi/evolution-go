@@ -14,16 +14,13 @@ import (
 )
 
 type webhookProducer struct {
-	url           string
 	loggerWrapper *logger_wrapper.LoggerManager
 }
 
 func NewWebhookProducer(
-	url string,
 	loggerWrapper *logger_wrapper.LoggerManager,
 ) producer_interfaces.Producer {
 	return &webhookProducer{
-		url:           url,
 		loggerWrapper: loggerWrapper,
 	}
 }
@@ -40,9 +37,6 @@ func (p *webhookProducer) Produce(
 		return nil
 	}
 
-	if p.url != "" {
-		go p.sendWebhookWithRetry(p.url, payload, 5, 30*time.Second, userID)
-	}
 	if webhookUrl != "" {
 		go p.sendWebhookWithRetry(webhookUrl, payload, 5, 30*time.Second, userID)
 	}
