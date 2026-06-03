@@ -63,6 +63,12 @@ func (r *Routes) AssignRoutes(eng *gin.Engine) {
 		c.Status(http.StatusNoContent)
 	})
 
+	eng.GET("/healthy", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	})
+
 	// Rotas para o gerenciador React (sem autenticação)
 	eng.Static("/assets", "./manager/dist/assets")
 
